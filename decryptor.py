@@ -3,7 +3,6 @@ import sys
 import datetime
 from cryptography.fernet import Fernet
 # Графичекая библеотека
-import rich
 from rich.console import Console
 from rich.progress import Progress
 
@@ -12,7 +11,7 @@ class _cfg:
 
 class _info:
 	name = "deCryptor"
-	version = "0.5.2-release"
+	version = "0.5.2-fix"
 	versionint = 0.52
 	author = ", ".join([
 		"Роман Слабицкий",
@@ -30,37 +29,35 @@ class _text:
 		_info.name_file)
 
 class _syntax:
-	param = ["-en", "-de"]
+	param = ["-en", "-de", "--key"]
 
 class _func:
-	def encoding(data: bytes, *, key_path: str = "0.key") -> bytes:
+	def encoding(data: bytes, key_path: str) -> bytes:
 		key = Fernet.generate_key()
 		with open(key_path, "wb") as file:
 			file.write(key)
 		criptor = Fernet(key)
 		return criptor.encrypt(data)
 
-	def decoding(data: bytes, *, key_path: str = "0.key") -> bytes:
+	def decoding(data: bytes, key_path: str) -> bytes:
 		with open(key_path, "rb") as file:
 			key = file.read()
 		criptor = Fernet(key)
 		return criptor.decrypt(data)
-
-	def files_in_folder(folderpath: str = "."):
+	
+	def files_in_folder(folderpath: str) -> list:
 		files = []
-		if not(os.path.isfile(folderpath)):
-			for i in os.listdir(folderpath):
-				path = os.path.abspath(
-					folderpath + "\\" if (sys.platform == "win32") else "/" + i)
+		folder_abspath = os.path.abspath(folderpath)
+		if os.path.isdir(folder_abspath):
+			for i in os.listdir(folder_abspath):
+				path = folder_abspath + os.sep + i
 				if os.path.isdir(path):
-					for ii in _func.files_in_folder(path):
-						files.append(ii)
-				else:
+					for _i in _func.files_in_folder(path):
+						files.append(_i)
+				elif os.path.isfile(path):
 					files.append(path)
-		else:
-			path = os.path.abspath(
-				folderpath + "\\" if (sys.platform == "win32") else "/" + i)
-			files.append(path)
+		elif os.path.isfile(folder_abspath):
+			files.append(folder_abspath)
 		return files
 
 class _tmp:
@@ -71,18 +68,16 @@ class _tmp:
 console = Console()
 
 if len(sys.argv) >= 3:
-	if str(sys.argv[1]) in _syntax.param:
-		if os.path.exists(str(sys.argv[len(sys.argv) - 1])):
+	if sys.argv[1] in _syntax.param:
+		if os.path.exists(sys.argv[len(sys.argv) - 1]):
 			try:
-				if str(sys.argv[1]) == _syntax.param[0]:
-					files_list = _func.files_in_folder(
-						str(sys.argv[len(sys.argv) - 1]))
+				if sys.argv[1] == _syntax.param[0]:
+					files_list = _func.files_in_folder(sys.argv[len(sys.argv) - 1])
 					if len(files_list) > 0:
 						time_start = datetime.datetime.now()
 						if "--key" in sys.argv:
 							try:
-								_tmp.key = str(
-									sys.argv[sys.argv.index("--key") + 1])
+								_tmp.key = sys.argv[sys.argv.index("--key") + 1]
 							except:
 								_tmp.key = "0.key"
 						with Progress() as progress:
@@ -97,7 +92,7 @@ if len(sys.argv) >= 3:
 								progress.update(TaskEncoding, advance=1)
 								try:
 									_tmp.dataout = _func.encoding(_tmp.data, key_path=os.path.split(
-										os.path.abspath(str(sys.argv[len(sys.argv) - 1])))[0] + _cfg.prefix + _tmp.key)
+										os.path.abspath(sys.argv[len(sys.argv) - 1]))[0] + _cfg.prefix + _tmp.key)
 								except:
 									console.print_exception()
 									_tmp.dataout = _tmp.data
@@ -114,57 +109,56 @@ if len(sys.argv) >= 3:
 									  time_end - time_start)
 					else:
 						console.print("[red]Ошибка[/]: файл(ы) не найден(ы)")
-				else:
-					files_list = _func.files_in_folder(
-						str(sys.argv[len(sys.argv) - 1]))
-					if os.path.exists(os.path.split(os.path.abspath(str(sys.argv[len(sys.argv) - 1])))[0] + _cfg.prefix + _tmp.key):
-						if len(files_list) > 0:
-							time_start = datetime.datetime.now()
-							if "--key" in sys.argv:
+				elif sys.argv[1] == _syntax.param[1]:
+					files_list = _func.files_in_folder(sys.argv[len(sys.argv) - 1])
+					if len(files_list) > 0:
+						time_start = datetime.datetime.now()
+						if "--key" in sys.argv:
+							try:
+								_tmp.key = sys.argv[sys.argv.index("--key") + 1]
+							except:
+								_tmp.key = "0.key"
+						with Progress() as progress:
+							TaskDecoding = progress.add_task(
+								"[green]Декодирование...", total=3 * len(files_list))
+							for i in files_list:
 								try:
-									_tmp.key = str(
-										sys.argv[sys.argv.index("--key") + 1])
+									with open(i, "rb") as file:
+										_tmp.data = file.read()
 								except:
-									_tmp.key = "0.key"
-							with Progress() as progress:
-								TaskDecoding = progress.add_task(
-									"[green]Декодирование...", total=3 * len(files_list))
-								for i in files_list:
-									try:
-										with open(i, "rb") as file:
-											_tmp.data = file.read()
-									except:
-										pass
-										# console.print_exception()
-									progress.update(TaskDecoding, advance=1)
-									try:
-										_tmp.dataout = _func.decoding(_tmp.data, key_path=os.path.split(
-											os.path.abspath(str(sys.argv[len(sys.argv) - 1])))[0] + _cfg.prefix + _tmp.key)
-									except:
-										pass
-										# console.print_exception()
-										_tmp.dataout = _tmp.data
-									progress.update(TaskDecoding, advance=1)
-									try:
-										with open(i, "wb") as file:
-											file.write(_tmp.dataout)
-									except:
-										pass
-										# console.print_exception()
-									progress.update(TaskDecoding, advance=1)
-
+									pass
+									# console.print_exception()
+								progress.update(TaskDecoding, advance=1)
+								try:
+									_tmp.dataout = _func.decoding(_tmp.data, key_path=os.path.split(
+										os.path.abspath(sys.argv[len(sys.argv) - 1]))[0] + _cfg.prefix + _tmp.key)
+								except:
+									pass
+									# console.print_exception()
+									_tmp.dataout = _tmp.data
+								progress.update(TaskDecoding, advance=1)
+								try:
+									with open(i, "wb") as file:
+										file.write(_tmp.dataout)
+								except:
+									pass
+									# console.print_exception()
+								progress.update(TaskDecoding, advance=1)
 							time_end = datetime.datetime.now()
-							console.print(
-								"[blue]Заняло времени[/]:", time_end - time_start)
-						else:
-							console.print(
-								"[red]Ошибка[/]: файл(ы) не найден(ы)")
-					else:
 						console.print(
-							"[red]Ошибка[/]: указаного ключа не существует")
+							"[blue]Заняло времени[/]:", time_end - time_start)
+					else:
+						console.print("[red]Ошибка[/]: файл(ы) не найден(ы)")
+				elif sys.argv[1] in ("-v", "--version"):
+					console.print(_text.t_version)
+				elif sys.argv[1] in ("-h", "--help"):
+					console.print(_text.t_help)
+				else:
+					console.print(_text.t_version)
+					console.print(_text.t_help)
 			except:
+				#console.print_exception()
 				console.print("[red]Ошибка[/]: Критическая ошибка")
-				# console.print_exception()
 		else:
 			console.print(
 				"[red]Ошибка[/]: Файл [yellow]\"{0}\"[/] не существует".format(sys.argv[2]))
@@ -173,13 +167,13 @@ if len(sys.argv) >= 3:
 			"[red]Ошибка[/]: Неизвестный параметр [yellow]\"{0}\"[/]".format(sys.argv[1]))
 else:
 	if len(sys.argv) >= 2:
-		if str(sys.argv[1]) in ("-v", "--version"):
+		if sys.argv[1] in ("-v", "--version"):
 			console.print(_text.t_version)
+		elif sys.argv[1] in ("-h", "--help"):
+			console.print(_text.t_help)
 		else:
-			if str(sys.argv[1]) in ("-h", "--help"):
-				console.print(_text.t_help)
-			else:
-				console.print(_text.t_help)
+			console.print(_text.t_version)
+			console.print(_text.t_help)
 	else:
 		console.print(_text.t_version)
 		console.print(_text.t_help)
