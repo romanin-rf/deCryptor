@@ -2,6 +2,7 @@ import os
 import sys
 import datetime
 from cryptography.fernet import Fernet
+import uuid
 
 # Графичекая библеотека
 from rich.console import Console
@@ -14,8 +15,8 @@ class _cfg:
 
 class _info:
 	name = "deCryptor"
-	version = "0.5.5f2"
-	versionint = 0.552
+	version = "0.5.6"
+	versionint = 0.56
 	author = ", ".join(
 		["Роман Слабицкий", "Никита Додзин", "Марк Метелев", "Коломыйцев Алексей"]
 	)
@@ -47,10 +48,14 @@ class _syntax:
 
 
 class _func:
-	def encoding(data: bytes, key_path: str) -> bytes:
-		key = Fernet.generate_key()
-		with open(key_path, "wb") as file:
-			file.write(key)
+	def encoding(data: bytes, key_path: str, *, generate=True) -> bytes:
+		if generate:
+			key = Fernet.generate_key()
+			with open(key_path, "wb") as file:
+				file.write(key)
+		else:
+			with open(key_path, "rb") as file:
+				key = file.read()
 		criptor = Fernet(key)
 		return criptor.encrypt(data)
 
@@ -77,7 +82,7 @@ class _func:
 
 
 class _tmp:
-	key = "0.key"
+	key = None
 	data = None
 	dataout = None
 	debag = True if (_syntax.parameters["debag"] in sys.argv) else False
@@ -111,12 +116,16 @@ if len(sys.argv) >= (4 if (_syntax.parameters in sys.argv) else 3):
 								]
 							except:
 								console.print_exception() if (_tmp.debag) else None
-								_tmp.key = "0.key"
+								_tmp.key = str(uuid.uuid4()).replace("-", "") + ".key"
+						else:
+							_tmp.key = str(uuid.uuid4()).replace("-", "") + ".key"
 
 						with Progress() as progress:
 							TaskEncoding = progress.add_task(
 								"[green]Закодирование...", total=3 * len(files_list)
 							)
+
+							wag_encode = 0
 
 							for i in files_list:
 								try:
@@ -131,11 +140,16 @@ if len(sys.argv) >= (4 if (_syntax.parameters in sys.argv) else 3):
 								try:
 									_tmp.dataout = _func.encoding(
 										_tmp.data,
-										key_path=os.path.split(
-											os.path.abspath(sys.argv[len(sys.argv) - 1])
-										)[0]
-										+ os.sep
-										+ _tmp.key,
+										key_path=(
+											os.path.split(
+												os.path.abspath(
+													sys.argv[len(sys.argv) - 1]
+												)
+											)[0]
+											+ os.sep
+											+ _tmp.key
+										),
+										generate=(True if (wag_encode == 0) else False),
 									)
 								except:
 									console.print_exception() if (_tmp.debag) else None
@@ -161,6 +175,7 @@ if len(sys.argv) >= (4 if (_syntax.parameters in sys.argv) else 3):
 								_tmp.count_error = 0
 
 								progress.update(TaskEncoding, advance=1)
+								wag_encode += 1
 
 						time_end = datetime.datetime.now()
 
@@ -177,7 +192,9 @@ if len(sys.argv) >= (4 if (_syntax.parameters in sys.argv) else 3):
 										"keypath": os.path.abspath(_tmp.key),
 										"files_all": files_list,
 										"files_error": _tmp.error_files,
-										"time_sec": (time_end - time_start).total_seconds(),
+										"time_sec": (
+											time_end - time_start
+										).total_seconds(),
 									},
 								}
 							)
@@ -196,8 +213,6 @@ if len(sys.argv) >= (4 if (_syntax.parameters in sys.argv) else 3):
 
 					if len(files_list) > 0:
 
-						time_start = datetime.datetime.now()
-
 						if _syntax.parameters["key"] in sys.argv:
 							try:
 								_tmp.key = sys.argv[
@@ -205,77 +220,114 @@ if len(sys.argv) >= (4 if (_syntax.parameters in sys.argv) else 3):
 								]
 							except:
 								console.print_exception() if (_tmp.debag) else None
-								_tmp.key = "0.key"
+								_tmp.key = None
+							if _tmp.key != None:
+								time_start = datetime.datetime.now()
 
-						with Progress() as progress:
-							TaskEncoding = progress.add_task(
-								"[green]Закодирование...", total=3 * len(files_list)
-							)
-
-							for i in files_list:
-								try:
-									with open(i, "rb") as file:
-										_tmp.data = file.read()
-								except:
-									console.print_exception() if (_tmp.debag) else None
-									_tmp.count_error += 1
-
-								progress.update(TaskEncoding, advance=1)
-
-								try:
-									_tmp.dataout = _func.decoding(
-										_tmp.data,
-										key_path=os.path.split(
-											os.path.abspath(sys.argv[len(sys.argv) - 1])
-										)[0]
-										+ os.sep
-										+ _tmp.key,
+								with Progress() as progress:
+									TaskEncoding = progress.add_task(
+										"[green]Закодирование...",
+										total=3 * len(files_list),
 									)
-								except:
-									console.print_exception() if (_tmp.debag) else None
-									_tmp.count_error += 1
-									if _tmp.data != None:
-										_tmp.dataout = _tmp.data
 
-								progress.update(TaskEncoding, advance=1)
+									for i in files_list:
+										try:
+											with open(i, "rb") as file:
+												_tmp.data = file.read()
+										except:
+											console.print_exception() if (
+												_tmp.debag
+											) else None
+											_tmp.count_error += 1
 
-								try:
-									if _tmp.data != None:
-										with open(i, "wb") as file:
-											file.write(_tmp.dataout)
-								except:
-									console.print_exception() if (_tmp.debag) else None
-									_tmp.count_error += 1
+										progress.update(TaskEncoding, advance=1)
 
-								if _tmp.count_error > 0:
-									_tmp.error_files.append(i)
+										try:
+											_tmp.dataout = _func.decoding(
+												_tmp.data,
+												key_path=os.path.split(
+													os.path.abspath(
+														sys.argv[len(sys.argv) - 1]
+													)
+												)[0]
+												+ os.sep
+												+ _tmp.key,
+											)
+										except:
+											console.print_exception() if (
+												_tmp.debag
+											) else None
+											_tmp.count_error += 1
+											if _tmp.data != None:
+												_tmp.dataout = _tmp.data
 
-								_tmp.data = None
-								_tmp.dataout = None
-								_tmp.count_error = 0
+										progress.update(TaskEncoding, advance=1)
 
-								progress.update(TaskEncoding, advance=1)
+										try:
+											if _tmp.data != None:
+												with open(i, "wb") as file:
+													file.write(_tmp.dataout)
+										except:
+											console.print_exception() if (
+												_tmp.debag
+											) else None
+											_tmp.count_error += 1
 
-						time_end = datetime.datetime.now()
+										if _tmp.count_error > 0:
+											_tmp.error_files.append(i)
 
-						print()
-						console.print(
-							"[blue]Заняло времени[/]: {0}".format(
-								(time_end - time_start)
+										_tmp.data = None
+										_tmp.dataout = None
+										_tmp.count_error = 0
+
+										progress.update(TaskEncoding, advance=1)
+
+								time_end = datetime.datetime.now()
+
+								print()
+								console.print(
+									"[blue]Заняло времени[/]: {0}".format(
+										(time_end - time_start)
+									)
+								) if (_tmp.json_out) else print(
+									"{0}".format(
+										{
+											"type": "data",
+											"data": {
+												"keypath": os.path.abspath(_tmp.key),
+												"files_all": files_list,
+												"files_error": _tmp.error_files,
+												"time_sec": (
+													time_end - time_start
+												).total_seconds(),
+											},
+										}
+									)
+								)
+							else:
+								print()
+								console.print("[red]Ошибка[/]: KEYPATH не указано") if (
+									_tmp.json_out
+								) else print(
+									"{0}".format(
+										{
+											"type": "error",
+											"data": "keypath_is_not_specified",
+										}
+									)
+								)
+						else:
+							print()
+							console.print(
+								"[red]Ошибка[/]: KEYPATH указано не верно"
+							) if (_tmp.json_out) else print(
+								"{0}".format(
+									{
+										"type": "error",
+										"data": "keypath_is_specified_incorrectly",
+									}
+								)
 							)
-						) if (_tmp.json_out) else print(
-							"{0}".format(
-								{
-									"type": "data",
-									"data": {
-										"keypath": os.path.abspath(_tmp.key),
-										"files_all": files_list,
-										"files_error": _tmp.error_files,
-										"time_sec": (time_end - time_start).total_seconds(),
-									},
-								}
-							)
-						)
 					else:
 						print()
 						console.print("[red]Ошибка[/]: файл(ы) не найден(ы)") if (
@@ -297,9 +349,9 @@ if len(sys.argv) >= (4 if (_syntax.parameters in sys.argv) else 3):
 			except:
 				print()
 				console.print_exception() if (_tmp.debag) else (
-					print("{0}".format({"type": "error", "data": "critical"}))
+					console.print("[red]Ошибка[/]: Критическая ошибка")
 					if (_tmp.json_out)
-					else console.print("[red]Ошибка[/]: Критическая ошибка")
+					else print("{0}".format({"type": "error", "data": "critical"}))
 				)
 		else:
 			print()
@@ -321,7 +373,16 @@ else:
 	if len(sys.argv) >= (3 if (_syntax.parameters in sys.argv) else 2):
 		if sys.argv[1] in _syntax.parameters["version"]:
 			None if (_tmp.json_out) else print()
-			console.print(_text.t_version) if (_tmp.json_out) else print("{0}".format({"name": _info.name, "version": _info.version, "version_int": _info.versionint, "author": _info.author.split(", ")}))
+			console.print(_text.t_version) if (_tmp.json_out) else print(
+				"{0}".format(
+					{
+						"name": _info.name,
+						"version": _info.version,
+						"version_int": _info.versionint,
+						"author": _info.author.split(", "),
+					}
+				)
+			)
 		elif sys.argv[1] in _syntax.parameters["help"]:
 			console.print(_text.t_help)
 		else:
