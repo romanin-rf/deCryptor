@@ -5,8 +5,8 @@ import uuid
 
 class __info__:
 	name = "deCryptor"
-	version = "0.5.7-release"
-	versionint = 0.57
+	version = "0.5.7-f1"
+	versionint = 0.571
 	authors = ["Роман Слабицкий", "Никита Додзин", "Марк Метелев", "Коломыйцев Алексей"]
 
 class __config__:
@@ -76,7 +76,8 @@ class deCryptor():
 		"""Зашифровывает файл(ы) и отдаёт словарь с информацией"""
 		# Нормализация путей
 		path = os.path.abspath(path)
-		key_path = os.path.abspath(key_path)
+		if key_path != None:
+			key_path = os.path.abspath(key_path)
 
 		# Проверка существования
 		if os.path.exists(path):
@@ -89,7 +90,7 @@ class deCryptor():
 			return {"type": "error", "data": "no_files_found"}
 
 		# Создание ключа
-		if not(os.path.exists(key_path)) or (key_path == None):
+		if (not(os.path.exists(key_path)) or (key_path == None)):
 			try:
 				key_path = __func__.create_key(key_path, path)
 			except:
