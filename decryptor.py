@@ -14,8 +14,8 @@ class _cfg:
 
 class _info:
 	name = "deCryptor"
-	version = "0.5.5-release"
-	versionint = 0.55
+	version = "0.5.5f1"
+	versionint = 0.551
 	author = ", ".join(
 		["Роман Слабицкий", "Никита Додзин", "Марк Метелев", "Коломыйцев Алексей"]
 	)
@@ -92,7 +92,7 @@ class _tmp:
 
 console = Console()
 
-if len(sys.argv) >= 4:
+if len(sys.argv) >= (4 if (_syntax.parameters in sys.argv) else 3):
 	if sys.argv[1] in _syntax.parameters.values():
 		if os.path.exists(sys.argv[len(sys.argv) - 1]):
 			try:
@@ -318,7 +318,7 @@ if len(sys.argv) >= 4:
 			"{0}".format({"type": "error", "data": "unknown_parameter"})
 		)
 else:
-	if len(sys.argv) >= 3:
+	if len(sys.argv) >= (3 if (_syntax.parameters in sys.argv) else 2):
 		if sys.argv[1] in _syntax.parameters["version"]:
 			None if (_tmp.json_out) else print()
 			console.print(_text.t_version) if (_tmp.json_out) else print("{0}".format({"name": _info.name, "version": _info.version, "version_int": _info.versionint, "author": _info.author.split(", ")}))
