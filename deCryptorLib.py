@@ -5,8 +5,8 @@ import uuid
 
 class __info__:
 	name = "deCryptor"
-	version = "0.5.7-f1"
-	versionint = 0.571
+	version = "0.5.7-f2"
+	versionint = 0.572
 	authors = ["Роман Слабицкий", "Никита Додзин", "Марк Метелев", "Коломыйцев Алексей"]
 
 class __config__:
@@ -52,7 +52,7 @@ class __func__:
 		else:
 			key_path = os.path.abspath(key_path if (key_path != None) else (str(uuid.uuid4()).replace("-", "") + ".key"))
 		with open(key_path, "wb") as file:
-			file.write(Fernet().generate_key())
+			file.write(Fernet.generate_key())
 		return key_path
 	
 	def load_key(key_path: str) -> bytes:
@@ -90,7 +90,13 @@ class deCryptor():
 			return {"type": "error", "data": "no_files_found"}
 
 		# Создание ключа
-		if (not(os.path.exists(key_path)) or (key_path == None)):
+		if key_path != None:
+			if not(os.path.exists(key_path)):
+				try:
+					key_path = __func__.create_key(key_path, path)
+				except:
+					return {"type": "error", "data": "failed_to_create_key_file"}
+		else:
 			try:
 				key_path = __func__.create_key(key_path, path)
 			except:
