@@ -15,8 +15,8 @@ class _cfg:
 
 class _info:
 	name = "deCryptor"
-	version = "0.5.6"
-	versionint = 0.56
+	version = "0.5.6f1"
+	versionint = 0.561
 	author = ", ".join(
 		["Роман Слабицкий", "Никита Додзин", "Марк Метелев", "Коломыйцев Алексей"]
 	)
@@ -215,9 +215,10 @@ if len(sys.argv) >= (4 if (_syntax.parameters in sys.argv) else 3):
 
 						if _syntax.parameters["key"] in sys.argv:
 							try:
-								_tmp.key = sys.argv[
-									sys.argv.index(_syntax.parameters["key"]) + 1
-								]
+								_tmp.key = os.path.abspath(sys.argv[
+										sys.argv.index(_syntax.parameters["key"]) + 1
+									]
+								)
 							except:
 								console.print_exception() if (_tmp.debag) else None
 								_tmp.key = None
@@ -226,7 +227,7 @@ if len(sys.argv) >= (4 if (_syntax.parameters in sys.argv) else 3):
 
 								with Progress() as progress:
 									TaskEncoding = progress.add_task(
-										"[green]Закодирование...",
+										"[green]Декодирование...",
 										total=3 * len(files_list),
 									)
 
@@ -245,13 +246,7 @@ if len(sys.argv) >= (4 if (_syntax.parameters in sys.argv) else 3):
 										try:
 											_tmp.dataout = _func.decoding(
 												_tmp.data,
-												key_path=os.path.split(
-													os.path.abspath(
-														sys.argv[len(sys.argv) - 1]
-													)
-												)[0]
-												+ os.sep
-												+ _tmp.key,
+												key_path=_tmp.key,
 											)
 										except:
 											console.print_exception() if (
