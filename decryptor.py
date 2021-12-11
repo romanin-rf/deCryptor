@@ -9,13 +9,13 @@ from rich.progress import Progress
 
 
 class _cfg:
-	prefix = "\\" if (sys.platform == "win32") else "/"
+	pass
 
 
 class _info:
 	name = "deCryptor"
-	version = "0.5.4-release"
-	versionint = 0.54
+	version = "0.5.5-release"
+	versionint = 0.55
 	author = ", ".join(
 		["Роман Слабицкий", "Никита Додзин", "Марк Метелев", "Коломыйцев Алексей"]
 	)
@@ -92,7 +92,7 @@ class _tmp:
 
 console = Console()
 
-if len(sys.argv) >= 3:
+if len(sys.argv) >= 4:
 	if sys.argv[1] in _syntax.parameters.values():
 		if os.path.exists(sys.argv[len(sys.argv) - 1]):
 			try:
@@ -174,10 +174,10 @@ if len(sys.argv) >= 3:
 								{
 									"type": "data",
 									"data": {
-										"keypath": _tmp.key,
+										"keypath": os.path.abspath(_tmp.key),
 										"files_all": files_list,
 										"files_error": _tmp.error_files,
-										"time": (time_end - time_start).total_seconds(),
+										"time_sec": (time_end - time_start).total_seconds(),
 									},
 								}
 							)
@@ -268,10 +268,10 @@ if len(sys.argv) >= 3:
 								{
 									"type": "data",
 									"data": {
-										"keypath": _tmp.key,
+										"keypath": os.path.abspath(_tmp.key),
 										"files_all": files_list,
 										"files_error": _tmp.error_files,
-										"time": (time_end - time_start).total_seconds(),
+										"time_sec": (time_end - time_start).total_seconds(),
 									},
 								}
 							)
@@ -318,9 +318,10 @@ if len(sys.argv) >= 3:
 			"{0}".format({"type": "error", "data": "unknown_parameter"})
 		)
 else:
-	if len(sys.argv) >= 2:
+	if len(sys.argv) >= 3:
 		if sys.argv[1] in _syntax.parameters["version"]:
-			console.print(_text.t_version)
+			None if (_tmp.json_out) else print()
+			console.print(_text.t_version) if (_tmp.json_out) else print("{0}".format({"name": _info.name, "version": _info.version, "version_int": _info.versionint, "author": _info.author.split(", ")}))
 		elif sys.argv[1] in _syntax.parameters["help"]:
 			console.print(_text.t_help)
 		else:
