@@ -14,8 +14,8 @@ class _cfg:
 
 class _info:
 	name = "deCryptor"
-	version = "0.5.5f1"
-	versionint = 0.551
+	version = "0.5.5f2"
+	versionint = 0.552
 	author = ", ".join(
 		["Роман Слабицкий", "Никита Додзин", "Марк Метелев", "Коломыйцев Алексей"]
 	)
@@ -134,7 +134,7 @@ if len(sys.argv) >= (4 if (_syntax.parameters in sys.argv) else 3):
 										key_path=os.path.split(
 											os.path.abspath(sys.argv[len(sys.argv) - 1])
 										)[0]
-										+ _cfg.prefix
+										+ os.sep
 										+ _tmp.key,
 									)
 								except:
@@ -228,7 +228,7 @@ if len(sys.argv) >= (4 if (_syntax.parameters in sys.argv) else 3):
 										key_path=os.path.split(
 											os.path.abspath(sys.argv[len(sys.argv) - 1])
 										)[0]
-										+ _cfg.prefix
+										+ os.sep
 										+ _tmp.key,
 									)
 								except:
