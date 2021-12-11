@@ -5,8 +5,8 @@ import uuid
 
 class __info__:
 	name = "deCryptor"
-	version = "0.5.7-f2"
-	versionint = 0.572
+	version = "0.5.7-f3"
+	versionint = 0.573
 	authors = ["Роман Слабицкий", "Никита Додзин", "Марк Метелев", "Коломыйцев Алексей"]
 
 class __config__:
@@ -19,7 +19,7 @@ class __func__:
 
 	def decoding(data: bytes, key: bytes) -> bytes:
 		"""Принимает данные и ключ, отдаёт расшифрованую байт-строку"""
-		return Fernet(key).encrypt(data)
+		return Fernet(key).decrypt(data)
 	
 	def encoding_fernet(fernet: Fernet, data: bytes) -> bytes:
 		"""Принимает класс Farnet с внедрёным ключём и данные, отдаёт зашифрованную байт-строку"""
@@ -140,7 +140,7 @@ class deCryptor():
 				error_block += 1
 			
 			# Проверка наличия ошибок
-			if error_block > 0:
+			if error_block != 0:
 				files_error.append(i)
 
 			# Сброс данных
@@ -205,7 +205,7 @@ class deCryptor():
 				error_block += 1
 			
 			# Проверка наличия ошибок
-			if error_block > 0:
+			if error_block != 0:
 				files_error.append(i)
 
 			# Сброс данных
