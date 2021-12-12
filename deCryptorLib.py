@@ -3,14 +3,17 @@ import datetime
 from cryptography.fernet import Fernet
 import uuid
 
+
 class __info__:
 	name = "deCryptor"
-	version = "0.5.8"
-	versionint = 0.58
+	version = "0.5.8-r1"
+	versionint = 0.581
 	authors = ["Роман Слабицкий", "Никита Додзин", "Марк Метелев", "Коломыйцев Алексей"]
+
 
 class __config__:
 	work_speed_mod = True
+
 
 class __func__:
 	def encoding(data: bytes, key: bytes) -> bytes:
@@ -20,7 +23,7 @@ class __func__:
 	def decoding(data: bytes, key: bytes) -> bytes:
 		"""Принимает данные и ключ, отдаёт расшифрованую байт-строку"""
 		return Fernet(key).decrypt(data)
-	
+
 	def encoding_fernet(fernet: Fernet, data: bytes) -> bytes:
 		"""Принимает класс Farnet с внедрёным ключём и данные, отдаёт зашифрованную байт-строку"""
 		return fernet.encrypt(data)
@@ -45,25 +48,38 @@ class __func__:
 			files.append(folder_abspath)
 		return files
 
-	def create_key(key_path: str=None, path: str=None) -> str:
+	def create_key(key_path: str = None, path: str = None) -> str:
 		"""Создаёт ключ-файл и отдаёт полный путь к нету"""
 		if path != None:
-			key_path = os.path.abspath(os.path.split(path)[0] + os.sep + os.path.basename(key_path if (key_path != None) else (str(uuid.uuid4()).replace("-", "") + ".key")))
+			key_path = os.path.abspath(
+				os.path.split(path)[0]
+				+ os.sep
+				+ os.path.basename(
+					key_path
+					if (key_path != None)
+					else (str(uuid.uuid4()).replace("-", "") + ".key")
+				)
+			)
 		else:
-			key_path = os.path.abspath(key_path if (key_path != None) else (str(uuid.uuid4()).replace("-", "") + ".key"))
+			key_path = os.path.abspath(
+				key_path
+				if (key_path != None)
+				else (str(uuid.uuid4()).replace("-", "") + ".key")
+			)
 		with open(key_path, "wb") as file:
 			file.write(Fernet.generate_key())
 		return key_path
-	
+
 	def load_key(key_path: str) -> bytes:
 		"""Принимает путь к ключ-файлу, и отдаёт байтовую строку ключа"""
 		with open(key_path, "rb") as file:
 			return file.read()
 
-class deCryptor():
+
+class deCryptor:
 	def __init__(self, *, speed_mode=False) -> None:
 		self.speed_mode = speed_mode if (__config__.work_speed_mod) else False
-	
+
 	def test_key(key: bytes) -> bool:
 		"""Вернёт булевое значение, если `True`, то значит ключ рабочий, если `False` - то ключ сломан или не являеться ключом"""
 		try:
@@ -72,8 +88,9 @@ class deCryptor():
 		except:
 			return False
 
-	def encode(self, path: str, key_path: str=None) -> dict:
+	def encode(self, path: str, key_path: str = None) -> dict:
 		"""Зашифровывает файл(ы) и отдаёт словарь с информацией"""
+		start_time_init = datetime.datetime.now()
 		# Нормализация путей
 		path = os.path.abspath(path)
 		if key_path != None:
@@ -84,14 +101,14 @@ class deCryptor():
 			files_list = __func__.files_in_folder(path)
 		else:
 			return {"type": "error", "data": "folder_or_file_does_not_exist"}
-		
+
 		# Проверка наличия файлов
 		if len(files_list) == 0:
 			return {"type": "error", "data": "no_files_found"}
 
 		# Создание ключа
 		if key_path != None:
-			if not(os.path.exists(key_path)):
+			if not (os.path.exists(key_path)):
 				try:
 					key_path = __func__.create_key(key_path, path)
 				except:
@@ -101,17 +118,17 @@ class deCryptor():
 				key_path = __func__.create_key(key_path, path)
 			except:
 				return {"type": "error", "data": "failed_to_create_key_file"}
-		
+
 		# Загрузка ключа
 		try:
 			key = __func__.load_key(key_path)
 		except:
 			return {"type": "error", "data": "failed_to_load_key_file"}
-		
+
 		# Тестирование ключа
-		if not(self.test_key(key)):
+		if not (self.test_key(key)):
 			return {"type": "error", "data": "key_file_is_not_working"}
-		
+
 		# Создание переменых для работы
 		files_error = []
 		error_block = 0
@@ -124,7 +141,9 @@ class deCryptor():
 				return {"type": "error", "data": "failed_to_use_speed_mode"}
 		else:
 			func_encode = __func__.encoding
-		
+
+		end_time_init = datetime.datetime.now()
+
 		# Работа
 		start_cryptor_time = datetime.datetime.now()
 
@@ -135,7 +154,7 @@ class deCryptor():
 					file_data = file.read()
 			except:
 				error_block += 1
-			
+
 			# Зашифровка
 			try:
 				if error_block == 0:
@@ -145,7 +164,7 @@ class deCryptor():
 						file_data = func_encode(file_data, key)
 			except:
 				error_block += 1
-			
+
 			# Запись
 			try:
 				if error_block == 0:
@@ -153,7 +172,7 @@ class deCryptor():
 						file.write(file_data)
 			except:
 				error_block += 1
-			
+
 			# Проверка наличия ошибок
 			if error_block != 0:
 				files_error.append(i)
@@ -164,10 +183,24 @@ class deCryptor():
 
 		end_cryptor_time = datetime.datetime.now()
 
-		return {"type": "data", "data": {"path": path, "key_path": key_path, "key": key, "files_all": files_list, "files_error": files_error, "time_sec": (end_cryptor_time - start_cryptor_time).total_seconds()}}
+		return {
+			"type": "data",
+			"data": {
+				"path": path,
+				"key_path": key_path,
+				"key": key,
+				"files_all": files_list,
+				"files_error": files_error,
+				"time_crypting_sec": (
+					end_cryptor_time - start_cryptor_time
+				).total_seconds(),
+				"time_init_sec": (end_time_init - start_time_init).total_seconds()
+			}
+		}
 
 	def decode(self, path: str, key_path: str) -> dict:
 		"""Расшифровывает зашифрованные(-ый) файл(ы) и отдаёт словарь с информацией"""
+		start_time_init = datetime.datetime.now()
 		# Нормализация путей
 		path = os.path.abspath(path)
 		key_path = os.path.abspath(key_path)
@@ -177,19 +210,19 @@ class deCryptor():
 			files_list = __func__.files_in_folder(path)
 		else:
 			return {"type": "error", "data": "folder_or_file_does_not_exist"}
-		
+
 		# Проверка наличия файлов
 		if len(files_list) == 0:
 			return {"type": "error", "data": "no_files_found"}
-		
+
 		# Загрузка ключа
 		try:
 			key = __func__.load_key(key_path)
 		except:
 			return {"type": "error", "data": "failed_to_load_key_file"}
-		
+
 		# Тестирование ключа
-		if not(self.test_key(key)):
+		if not (self.test_key(key)):
 			return {"type": "error", "data": "key_file_is_not_working"}
 
 		# Создание переменых для работы
@@ -205,6 +238,8 @@ class deCryptor():
 		else:
 			func_decode = __func__.decoding
 
+		end_time_init = datetime.datetime.now()
+
 		# Работа
 		start_cryptor_time = datetime.datetime.now()
 
@@ -215,7 +250,7 @@ class deCryptor():
 					file_data = file.read()
 			except:
 				error_block += 1
-			
+
 			# Разшифровка
 			try:
 				if error_block == 0:
@@ -225,7 +260,7 @@ class deCryptor():
 						file_data = func_decode(file_data, key)
 			except:
 				error_block += 1
-			
+
 			# Запись
 			try:
 				if error_block == 0:
@@ -233,7 +268,7 @@ class deCryptor():
 						file.write(file_data)
 			except:
 				error_block += 1
-			
+
 			# Проверка наличия ошибок
 			if error_block != 0:
 				files_error.append(i)
@@ -244,8 +279,26 @@ class deCryptor():
 
 		end_cryptor_time = datetime.datetime.now()
 
-		return {"type": "data", "data": {"path": path, "key_path": key_path, "key": key, "files_all": files_list, "files_error": files_error, "time_sec": (end_cryptor_time - start_cryptor_time).total_seconds()}}
+		return {
+			"type": "data",
+			"data": {
+				"path": path,
+				"key_path": key_path,
+				"key": key,
+				"files_all": files_list,
+				"files_error": files_error,
+				"time_crypting_sec": (
+					end_cryptor_time - start_cryptor_time
+				).total_seconds(),
+				"time_init_sec": (end_time_init - start_time_init).total_seconds()
+			}
+		}
 
 	def get_version(self) -> dict:
 		"""Отдаёт информацию о версии deCryptorLib"""
-		return {"name": __info__.name, "version": __info__.version, "versionint": __info__.versionint, "authors": __info__.authors}
+		return {
+			"name": __info__.name,
+			"version": __info__.version,
+			"versionint": __info__.versionint,
+			"authors": __info__.authors
+		}
