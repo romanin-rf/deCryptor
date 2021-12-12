@@ -5,12 +5,12 @@ import uuid
 
 class __info__:
 	name = "deCryptor"
-	version = "0.5.7-f3"
-	versionint = 0.573
+	version = "0.5.8"
+	versionint = 0.58
 	authors = ["Роман Слабицкий", "Никита Додзин", "Марк Метелев", "Коломыйцев Алексей"]
 
 class __config__:
-	work_speed_mod = False
+	work_speed_mod = True
 
 class __func__:
 	def encoding(data: bytes, key: bytes) -> bytes:
@@ -108,10 +108,22 @@ class deCryptor():
 		except:
 			return {"type": "error", "data": "failed_to_load_key_file"}
 		
+		# Тестирование ключа
+		if not(self.test_key(key)):
+			return {"type": "error", "data": "key_file_is_not_working"}
+		
 		# Создание переменых для работы
 		files_error = []
 		error_block = 0
 		file_data = None
+		if self.speed_mode:
+			try:
+				farnet = Fernet(key)
+				func_encode = __func__.encoding_fernet
+			except:
+				return {"type": "error", "data": "failed_to_use_speed_mode"}
+		else:
+			func_encode = __func__.encoding
 		
 		# Работа
 		start_cryptor_time = datetime.datetime.now()
@@ -127,7 +139,10 @@ class deCryptor():
 			# Зашифровка
 			try:
 				if error_block == 0:
-					file_data = __func__.encoding(file_data, key)
+					if self.speed_mode:
+						file_data = func_encode(farnet, file_data)
+					else:
+						file_data = func_encode(file_data, key)
 			except:
 				error_block += 1
 			
@@ -172,11 +187,23 @@ class deCryptor():
 			key = __func__.load_key(key_path)
 		except:
 			return {"type": "error", "data": "failed_to_load_key_file"}
+		
+		# Тестирование ключа
+		if not(self.test_key(key)):
+			return {"type": "error", "data": "key_file_is_not_working"}
 
 		# Создание переменых для работы
 		files_error = []
 		error_block = 0
 		file_data = None
+		if self.speed_mode:
+			try:
+				farnet = Fernet(key)
+				func_decode = __func__.decoding_fernet
+			except:
+				return {"type": "error", "data": "failed_to_use_speed_mode"}
+		else:
+			func_decode = __func__.decoding
 
 		# Работа
 		start_cryptor_time = datetime.datetime.now()
@@ -192,7 +219,10 @@ class deCryptor():
 			# Разшифровка
 			try:
 				if error_block == 0:
-					file_data = __func__.decoding(file_data, key)
+					if self.speed_mode:
+						file_data = func_decode(farnet, file_data)
+					else:
+						file_data = func_decode(file_data, key)
 			except:
 				error_block += 1
 			
