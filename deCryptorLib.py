@@ -6,14 +6,13 @@ import uuid
 
 class __info__:
 	name = "deCryptor"
-	version = "0.5.8-f2"
-	versionint = 0.582
+	version = "0.5.9-release"
+	versionint = 0.59
 	authors = ["Роман Слабицкий", "Никита Додзин", "Марк Метелев", "Коломыйцев Алексей"]
 
 
 class __config__:
 	work_speed_mod = True
-
 
 class __func__:
 	def encoding(data: bytes, key: bytes) -> bytes:
