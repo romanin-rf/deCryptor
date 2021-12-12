@@ -6,8 +6,8 @@ import uuid
 
 class __info__:
 	name = "deCryptor"
-	version = "0.5.8-r1"
-	versionint = 0.581
+	version = "0.5.8-f2"
+	versionint = 0.582
 	authors = ["Роман Слабицкий", "Никита Додзин", "Марк Метелев", "Коломыйцев Алексей"]
 
 
@@ -80,7 +80,7 @@ class deCryptor:
 	def __init__(self, *, speed_mode=False) -> None:
 		self.speed_mode = speed_mode if (__config__.work_speed_mod) else False
 
-	def test_key(key: bytes) -> bool:
+	def test_key(self, key: bytes) -> bool:
 		"""Вернёт булевое значение, если `True`, то значит ключ рабочий, если `False` - то ключ сломан или не являеться ключом"""
 		try:
 			fernet = Fernet(key)
@@ -126,7 +126,7 @@ class deCryptor:
 			return {"type": "error", "data": "failed_to_load_key_file"}
 
 		# Тестирование ключа
-		if not (self.test_key(key)):
+		if not(self.test_key(key)):
 			return {"type": "error", "data": "key_file_is_not_working"}
 
 		# Создание переменых для работы
