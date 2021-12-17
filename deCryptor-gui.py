@@ -20,7 +20,8 @@ def named_tuple(name: str, data: dict) -> namedtuple:
 	return namedtuple(name, data.keys())(*data.values())
 
 # Получение информации
-__info__ = named_tuple("__info__", DeCryptor.get_version())
+__info_core__ = named_tuple("info_core", DeCryptor.get_version())
+__info_gui__ = named_tuple("info_gui", {"name": "deCryptor GUI", "version": "0.1-release", "versionint": 0.1})
 
 # Окно программы
 layout = [
@@ -39,11 +40,11 @@ layout = [
 		sg.FileBrowse(target="key_path")
 	],
 	[sg.Output(size=(88, 20), key="OutputConsole")],
-	[sg.Submit("Запуск", key="Start"), sg.Cancel("Очистить логи", key="ClearConsole"), sg.Text("Версия ядра: {0} ({1})".format(__info__.version, __info__.versionint), justification="right")]
+	[sg.Submit("Запуск", key="Start"), sg.Cancel("Очистить логи", key="ClearConsole"), sg.Text("Версия ядра: {0} ({1})\nВерсия GUI: {2} ({3})".format(__info_core__.version, __info_core__.versionint, __info_gui__.version, __info_gui__.versionint), justification="left")]
 ]
 
 # Создание окна
-window = sg.Window("deCryptor", layout)
+window = sg.Window("{0}".format(__info_gui__.name), layout)
 
 # Включения проверки нажатий
 while True:  # The Event Loop
