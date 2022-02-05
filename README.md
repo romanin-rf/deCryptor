@@ -17,6 +17,7 @@
     - [Vkontakte](https://vk.com/pofig24na7)
   - Работал над:
     - Функция шифрования
+    - UI
 - [`Никита Додзин`](https://github.com/dodzin-nik) (Разработчик)
   - Контакты:
     - [Vkontakte](https://vk.com/mr.uknown)
