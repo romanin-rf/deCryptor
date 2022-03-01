@@ -10,11 +10,11 @@ key = str()                          # Это путь к ключу (даже �
 
 # Функции
 def encoding(p: str, key_path: str=None) -> dict:
-	return DeCryptor.encode(p, key_path)
+	return DeCryptor.encode_file(p, key_path)
 
 
 def decoding(p: str, key_path: str) -> dict:
-	return DeCryptor.decode(p, key_path)
+	return DeCryptor.decode_file(p, key_path)
 
 def named_tuple(name: str, data: dict) -> namedtuple:
 	return namedtuple(name, data.keys())(*data.values())

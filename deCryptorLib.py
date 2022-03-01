@@ -1,18 +1,31 @@
 import os
 import datetime
-from cryptography.fernet import Fernet
 import uuid
-
+import base64
+# Fernet importing
+from cryptography.fernet import Fernet
+from cryptography.hazmat.primitives import hashes
+from cryptography.hazmat.primitives.kdf.pbkdf2 import PBKDF2HMAC
 
 class __info__:
 	name = "deCryptor"
-	version = "0.5.9-release"
-	versionint = 0.59
-	authors = ["Роман Слабицкий", "Никита Додзин", "Марк Метелев", "Коломыйцев Алексей"]
-
+	version = "0.6-beta"
+	versionint = 0.6
+	authors = [
+		"Роман Слабицкий",
+		"Никита Додзин",
+		"Марк Метелев",
+		"Коломыйцев Алексей"
+	]
 
 class __config__:
 	work_speed_mod = True
+	create_key_from_password = {
+		"length": 32,
+		"salt_size": 16,
+		"iterations": 390000,
+		"algorithm": hashes.SHA256()
+	}
 
 class __func__:
 	def encoding(data: bytes, key: bytes) -> bytes:
@@ -47,7 +60,7 @@ class __func__:
 			files.append(folder_abspath)
 		return files
 
-	def create_key(key_path: str = None, path: str = None) -> str:
+	def create_key(key_path: str=None, path: str=None) -> str:
 		"""Создаёт ключ-файл и отдаёт полный путь к нету"""
 		if path != None:
 			key_path = os.path.abspath(
@@ -69,11 +82,19 @@ class __func__:
 			file.write(Fernet.generate_key())
 		return key_path
 
+	def create_key_from_password(password: str) -> bytes:
+		"""Создаёт ключ из строки, который будет являться паролем от данных"""
+		return base64.urlsafe_b64encode(PBKDF2HMAC(
+			algorithm=__config__.create_key_from_password["algorithm"],
+			length=__config__.create_key_from_password["length"],
+			salt=os.urandom(__config__.create_key_from_password["salt_size"]),
+			iterations=__config__.create_key_from_password["iterations"]
+		).derive(bytes(password)))
+
 	def load_key(key_path: str) -> bytes:
 		"""Принимает путь к ключ-файлу, и отдаёт байтовую строку ключа"""
 		with open(key_path, "rb") as file:
 			return file.read()
-
 
 class deCryptor:
 	def __init__(self, *, speed_mode=False) -> None:
@@ -87,7 +108,7 @@ class deCryptor:
 		except:
 			return False
 
-	def encode(self, path: str, key_path: str = None) -> dict:
+	def encode_file(self, path: str, key_path: str = None) -> dict:
 		"""Зашифровывает файл(ы) и отдаёт словарь с информацией"""
 		start_time_init = datetime.datetime.now()
 		# Нормализация путей
@@ -190,14 +211,12 @@ class deCryptor:
 				"key": key,
 				"files_all": files_list,
 				"files_error": files_error,
-				"time_crypting_sec": (
-					end_cryptor_time - start_cryptor_time
-				).total_seconds(),
+				"time_crypting_sec": (end_cryptor_time - start_cryptor_time).total_seconds(),
 				"time_init_sec": (end_time_init - start_time_init).total_seconds()
 			}
 		}
 
-	def decode(self, path: str, key_path: str) -> dict:
+	def decode_file(self, path: str, key_path: str) -> dict:
 		"""Расшифровывает зашифрованные(-ый) файл(ы) и отдаёт словарь с информацией"""
 		start_time_init = datetime.datetime.now()
 		# Нормализация путей
@@ -286,9 +305,179 @@ class deCryptor:
 				"key": key,
 				"files_all": files_list,
 				"files_error": files_error,
-				"time_crypting_sec": (
-					end_cryptor_time - start_cryptor_time
-				).total_seconds(),
+				"time_crypting_sec": (end_cryptor_time - start_cryptor_time).total_seconds(),
+				"time_init_sec": (end_time_init - start_time_init).total_seconds()
+			}
+		}
+	
+	def encode_file_with_password(self, path: str, password: str) -> bytes:
+		"""Зашифровывает файл(ы), `но ключём выступает строка, то есть пароль`, и отдаёт словарь с информацией"""
+		start_time_init = datetime.datetime.now()
+		# Нормализация путей
+		path = os.path.abspath(path)
+
+		# Проверка существования
+		if os.path.exists(path):
+			files_list = __func__.files_in_folder(path)
+		else:
+			return {"type": "error", "data": "folder_or_file_does_not_exist"}
+		
+		# Создание ключа из пароля
+		key = __func__.create_key_from_password(password)
+
+		# Тестирование ключа на ошибки при создании
+		if not(self.test_key(key)):
+			return {"type": "error", "data": "key_file_is_not_working"}
+
+		# Создание переменых для работы
+		files_error = []
+		error_block = 0
+		file_data = None
+		if self.speed_mode:
+			try:
+				farnet = farnet = Fernet(key)
+				func_encode = __func__.encoding_fernet
+			except:
+				return {"type": "error", "data": "failed_to_use_speed_mode"}
+		else:
+			func_encode = __func__.encoding
+		
+		end_time_init = datetime.datetime.now()
+		
+		# Работа
+		start_cryptor_time = datetime.datetime.now()
+
+		for i in files_list:
+			# Чтение
+			try:
+				with open(i, "rb") as file:
+					file_data = file.read()
+			except:
+				error_block += 1
+
+			# Зашифровка
+			try:
+				if error_block == 0:
+					if self.speed_mode:
+						file_data = func_encode(farnet, file_data)
+					else:
+						file_data = func_encode(file_data, key)
+			except:
+				error_block += 1
+
+			# Запись
+			try:
+				if error_block == 0:
+					with open(i, "wb") as file:
+						file.write(file_data)
+			except:
+				error_block += 1
+
+			# Проверка наличия ошибок
+			if error_block != 0:
+				files_error.append(i)
+
+			# Сброс данных
+			error_block = 0
+			file_data = None
+		
+		end_cryptor_time = datetime.datetime.now()
+
+		return {
+			"type": "data",
+			"data": {
+				"path": path,
+				"key": key,
+				"password": password,
+				"files_all": files_list,
+				"files_error": files_error,
+				"time_crypting_sec": (end_cryptor_time - start_cryptor_time).total_seconds(),
+				"time_init_sec": (end_time_init - start_time_init).total_seconds()
+			}
+		}
+
+	def decode_file_with_password(self, path: str, password: str) -> bytes:
+		"""Зашифровывает файл(ы), `но ключём выступает строка, то есть пароль`, и отдаёт словарь с информацией"""
+		start_time_init = datetime.datetime.now()
+		# Нормализация путей
+		path = os.path.abspath(path)
+
+		# Проверка существования
+		if os.path.exists(path):
+			files_list = __func__.files_in_folder(path)
+		else:
+			return {"type": "error", "data": "folder_or_file_does_not_exist"}
+		
+		# Создание ключа из пароля
+		key = __func__.create_key_from_password(password)
+
+		# Тестирование ключа на ошибки при создании
+		if not(self.test_key(key)):
+			return {"type": "error", "data": "key_file_is_not_working"}
+
+		# Создание переменых для работы
+		files_error = []
+		error_block = 0
+		file_data = None
+		if self.speed_mode:
+			try:
+				farnet = Fernet(key)
+				func_decode = __func__.decoding_fernet
+			except:
+				return {"type": "error", "data": "failed_to_use_speed_mode"}
+		else:
+			func_decode = __func__.decoding
+		
+		end_time_init = datetime.datetime.now()
+		
+		# Работа
+		start_cryptor_time = datetime.datetime.now()
+
+		for i in files_list:
+			# Чтение
+			try:
+				with open(i, "rb") as file:
+					file_data = file.read()
+			except:
+				error_block += 1
+
+			# Зашифровка
+			try:
+				if error_block == 0:
+					if self.speed_mode:
+						file_data = func_decode(farnet, file_data)
+					else:
+						file_data = func_decode(file_data, key)
+			except:
+				error_block += 1
+
+			# Запись
+			try:
+				if error_block == 0:
+					with open(i, "wb") as file:
+						file.write(file_data)
+			except:
+				error_block += 1
+
+			# Проверка наличия ошибок
+			if error_block != 0:
+				files_error.append(i)
+
+			# Сброс данных
+			error_block = 0
+			file_data = None
+		
+		end_cryptor_time = datetime.datetime.now()
+
+		return {
+			"type": "data",
+			"data": {
+				"path": path,
+				"key": key,
+				"password": password,
+				"files_all": files_list,
+				"files_error": files_error,
+				"time_crypting_sec": (end_cryptor_time - start_cryptor_time).total_seconds(),
 				"time_init_sec": (end_time_init - start_time_init).total_seconds()
 			}
 		}
