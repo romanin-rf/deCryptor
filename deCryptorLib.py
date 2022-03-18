@@ -77,7 +77,7 @@ class __func__:
 		return key_path
 
 	def create_key_from_password(password: str) -> tuple[bytes, bytes]:
-		return __func__.create_key_from_password(
+		return __func__.password_to_token(
 			password,
 			algorithm=hashes.SHA256(),
 			length=32,
@@ -87,7 +87,7 @@ class __func__:
 	
 	def password_to_token(password: str, *, algorithm, length: int, salt: bytes, iterations: int) -> tuple[bytes, bytes]:
 		"""Создаёт ключ из строки, который будет являться паролем от данных"""
-		salt = (os.urandom(__config__.create_key_from_password["salt_size"])) if (salt is None) else (salt)
+		salt = (os.urandom(16)) if (salt is None) else (salt)
 		key = base64.urlsafe_b64encode(PBKDF2HMAC(
 			algorithm=algorithm,
 			length=length,
