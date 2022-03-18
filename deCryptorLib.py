@@ -9,7 +9,7 @@ from cryptography.hazmat.primitives.kdf.pbkdf2 import PBKDF2HMAC
 
 class __info__:
 	name = "deCryptor"
-	version = "0.6-beta"
+	version = "0.6-fix"
 	versionint = 0.6
 	authors = [
 		"Роман Слабицкий",
@@ -20,12 +20,6 @@ class __info__:
 
 class __config__:
 	work_speed_mod = True
-	create_key_from_password = {
-		"length": 32,
-		"salt_size": 16,
-		"iterations": 390000,
-		"algorithm": hashes.SHA256()
-	}
 
 class __func__:
 	def encoding(data: bytes, key: bytes) -> bytes:
@@ -82,14 +76,25 @@ class __func__:
 			file.write(Fernet.generate_key())
 		return key_path
 
-	def create_key_from_password(password: str) -> bytes:
+	def create_key_from_password(password: str) -> tuple[bytes, bytes]:
+		return __func__.create_key_from_password(
+			password,
+			algorithm=hashes.SHA256(),
+			length=32,
+			salt=base64.b64encode(password.encode()),
+			iterations=390000
+		)
+	
+	def password_to_token(password: str, *, algorithm, length: int, salt: bytes, iterations: int) -> tuple[bytes, bytes]:
 		"""Создаёт ключ из строки, который будет являться паролем от данных"""
-		return base64.urlsafe_b64encode(PBKDF2HMAC(
-			algorithm=__config__.create_key_from_password["algorithm"],
-			length=__config__.create_key_from_password["length"],
-			salt=os.urandom(__config__.create_key_from_password["salt_size"]),
-			iterations=__config__.create_key_from_password["iterations"]
-		).derive(bytes(password)))
+		salt = (os.urandom(__config__.create_key_from_password["salt_size"])) if (salt is None) else (salt)
+		key = base64.urlsafe_b64encode(PBKDF2HMAC(
+			algorithm=algorithm,
+			length=length,
+			salt=salt,
+			iterations=iterations
+		).derive(password.encode()))
+		return base64.b64encode(salt), key
 
 	def load_key(key_path: str) -> bytes:
 		"""Принимает путь к ключ-файлу, и отдаёт байтовую строку ключа"""
@@ -310,7 +315,7 @@ class deCryptor:
 			}
 		}
 	
-	def encode_file_with_password(self, path: str, password: str) -> bytes:
+	def encode_file_with_password(self, path: str, password: str) -> dict:
 		"""Зашифровывает файл(ы), `но ключём выступает строка, то есть пароль`, и отдаёт словарь с информацией"""
 		start_time_init = datetime.datetime.now()
 		# Нормализация путей
@@ -323,7 +328,7 @@ class deCryptor:
 			return {"type": "error", "data": "folder_or_file_does_not_exist"}
 		
 		# Создание ключа из пароля
-		key = __func__.create_key_from_password(password)
+		key = __func__.create_key_from_password(password)[1]
 
 		# Тестирование ключа на ошибки при создании
 		if not(self.test_key(key)):
@@ -396,7 +401,7 @@ class deCryptor:
 			}
 		}
 
-	def decode_file_with_password(self, path: str, password: str) -> bytes:
+	def decode_file_with_password(self, path: str, password: str) -> dict:
 		"""Зашифровывает файл(ы), `но ключём выступает строка, то есть пароль`, и отдаёт словарь с информацией"""
 		start_time_init = datetime.datetime.now()
 		# Нормализация путей
@@ -409,7 +414,7 @@ class deCryptor:
 			return {"type": "error", "data": "folder_or_file_does_not_exist"}
 		
 		# Создание ключа из пароля
-		key = __func__.create_key_from_password(password)
+		key = __func__.create_key_from_password(password)[1]
 
 		# Тестирование ключа на ошибки при создании
 		if not(self.test_key(key)):
