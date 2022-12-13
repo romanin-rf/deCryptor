@@ -4,7 +4,7 @@ import os
 from collections import namedtuple
 
 # Инициализация нужного для работы
-DeCryptor = deCryptorLib.deCryptor() # Это мой обрабочик, в который задаёшь путь к терминальной версии deCryptor, даже EXE можно он всё сам обработает
+DeCryptor = deCryptorLib.deCryptor() # 
 path = str()                         # Это путь к папке или файлу (для последущего закодирования или раз кодирования)
 key = str()                          # Это путь к ключу (даже если он не указан будет работать)
 
