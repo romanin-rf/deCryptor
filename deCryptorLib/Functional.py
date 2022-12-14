@@ -84,17 +84,22 @@ def slint(value: int, div: int) -> List[int]:
 # TODO> Переписать
 def text_to_token(
     text: str,
-    algorithm: Optional[ALGORITHM]=None,
-    length: Optional[int]=None,
-    salt: Optional[bytes]=None,
-    iterations: Optional[int]=None
+    algorithm: ALGORITHM,
+    length: int,
+    iterations: int
 ) -> tuple[SALT, KEY]:
-    algorithm, length, iterations = algorithm or hashes.SHA256(), length or 32, iterations or 4096
     text: bytes = text.encode(errors="ignore")
-    salt = salt or base64.b64encode(text)
     key = base64.urlsafe_b64encode(
-        PBKDF2HMAC(algorithm=algorithm, length=length, salt=salt, iterations=iterations).derive(text)
+        PBKDF2HMAC(
+            algorithm=algorithm,
+            length=length,
+            salt=(salt:=base64.b64encode(text)),
+            iterations=iterations
+        ).derive(text)
     )
     return salt, key
 
-def generate_key_from_password(password: str, params: Dict[str, Any]={}) -> bytes: return text_to_token(password, **params)[1]
+def generate_key_from_password(
+    password: str,
+    params: Dict[str, Any]
+) -> bytes: return text_to_token(password, **params)[1]

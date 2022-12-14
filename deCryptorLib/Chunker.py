@@ -132,9 +132,16 @@ class ChunksFile:
         self._chunks: Dict[str, Chunk] = {}
         self._init_chunks()
 
-    def __str__(self) -> str: return f"{self.__class__.__name__}({self._chunks})"
+    def __str__(self) -> str: return f"{self.__class__.__name__}(name='{self._fp.name}', {self._chunks})"
     def __repr__(self) -> str: return self.__str__()
     def __del__(self) -> None: self.close()
+    def __getitem__(self, key: str) -> Chunk:
+        return self._chunks[key]
+    def __setitem__(self, key: str, value: Chunk) -> None:
+        assert isinstance(value, Chunk)
+        self._chunks[key] = value
+    def __delitem__(self, key: str) -> None:
+        del self._chunks[key]
     
     @property
     def name(self) -> str: return self._fp.name

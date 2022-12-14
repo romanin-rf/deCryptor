@@ -1,4 +1,5 @@
 from .Chunker import Chunk, ChunksFile
+from .deCryptor import deCryptor
 from .Functional import slint, generate_key_from_password
 
 __name__ = 'deCryptorLib'
