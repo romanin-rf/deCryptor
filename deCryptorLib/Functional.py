@@ -1,14 +1,13 @@
-#import base64
-#import os
-#from cryptography.fernet import Fernet
-#from cryptography.hazmat.primitives import hashes
-#from cryptography.hazmat.primitives.kdf.pbkdf2 import PBKDF2HMAC
+import base64
+import os
+from cryptography.hazmat.primitives import hashes
+from cryptography.hazmat.primitives.kdf.pbkdf2 import PBKDF2HMAC
 import io
 import os
 from tempfile import mkstemp
-from typing import Optional, Union
+from typing import Optional, Union, List, Dict, Any
 #@ Local Import's
-from .Types import FP
+from .Types import FP, KEY, SALT, ALGORITHM
 
 # ? For Chunker.py
 def htpn(value: Union[str, bytes], part_size: int) -> bytes:
@@ -30,6 +29,7 @@ def hfp(
     default_data = default_data or b''
     buffer_size = buffer_size or 4096
     if isinstance(fp, str):
+        fp = os.path.abspath(fp)
         if os.path.exists(fp):
             file = open(fp, 'rb+')
         else:
@@ -69,13 +69,32 @@ def hfp(
         file.flush()
     return file
 
+def slint(value: int, div: int) -> List[int]:
+    l = []
+    while value != 0:
+        if value > div:
+            l.append(div)
+            value -= div
+        else:
+            l.append(value)
+            value = 0
+    return l
+
 # ? For deCryptor.py
 # TODO> Переписать
-"""def password_to_token(password: str, *, algorithm, length: int, salt: bytes, iterations: int) -> tuple[bytes, bytes]:
-    key = base64.urlsafe_b64encode(PBKDF2HMAC(
-        algorithm=hashes.SHA256(),
-        length=length,
-        salt=salt,
-        iterations=iterations
-    ).derive(password.encode()))
-    return base64.b64encode(salt), key"""
+def text_to_token(
+    text: str,
+    algorithm: Optional[ALGORITHM]=None,
+    length: Optional[int]=None,
+    salt: Optional[bytes]=None,
+    iterations: Optional[int]=None
+) -> tuple[SALT, KEY]:
+    algorithm, length, iterations = algorithm or hashes.SHA256(), length or 32, iterations or 4096
+    text: bytes = text.encode(errors="ignore")
+    salt = salt or base64.b64encode(text)
+    key = base64.urlsafe_b64encode(
+        PBKDF2HMAC(algorithm=algorithm, length=length, salt=salt, iterations=iterations).derive(text)
+    )
+    return salt, key
+
+def generate_key_from_password(password: str, params: Dict[str, Any]={}) -> bytes: return text_to_token(password, **params)[1]

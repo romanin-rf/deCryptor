@@ -1,4 +1,5 @@
 import io
+from cryptography.hazmat.primitives import hashes
 from typing import Union
 
 FP = Union[
@@ -8,3 +9,6 @@ FP = Union[
     io.BytesIO,
     io.BufferedReader
 ]
+KEY = bytes
+SALT = bytes
+ALGORITHM = hashes.SHA256
