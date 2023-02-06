@@ -1,4 +1,6 @@
 import sys
+import os
+import time
 from style import *
 from PyQt6.QtGui import *
 from PyQt6.QtWidgets import *
@@ -90,13 +92,14 @@ class MainWindow(QMainWindow):
         if self.fname.text() == '' or self.fname.text() == 'Enter a file path...':
             QMessageBox.warning(self, 'Warning', 'Please enter a file path')
         else:
-            self.close()
+            
             self.progress = ProgressWindow()
             self.progress.show()
 
     def brouse(self):
-        filename = QFileDialog.getOpenFileName(self, 'Open File', '/home')
-        self.fname.setText(filename[0])
+        global filename
+        filename = QFileDialog.getExistingDirectory(self, 'Open File', '/home')
+        self.fname.setText(filename)
 
 
 
@@ -114,9 +117,14 @@ class ProgressWindow(QMainWindow):
 
     def progress(self):
         self.progress_bar = QProgressBar(self)
+        for i in range(int(sum([len(files) for files in os.walk(r'{0}'.format(filename))]))):
+            self.progress_bar.setValue(i)
 
-        for i in range(len(list(MainWindow.fname.text().iterdir()))):
-            self.progress_bar.setValue(i/100)
+        self.progress_bar.hide()
+
+        text = QLabel('Sucsessfull!', self)
+        text.move(200, 200)
+
 
 if __name__ == "__main__":
     app = QApplication(sys.argv)
