@@ -81,6 +81,7 @@ class MainWindow(QMainWindow):
         but.setStyleSheet(pushButton_StyleSheet)
         but.setObjectName("Button")
         but.move(430, 200)
+        but.clicked.connect(self.browse_file if mode.isChecked() else self.browse_directory)
 
         but1 = QPushButton('Next', self)
         but1.resize(120, 40)
@@ -96,16 +97,16 @@ class MainWindow(QMainWindow):
         but2.setObjectName("Button")
         but2.move(195, 300)
 
-        if mode:
-            but.clicked.connect(self.browse_file)
-        elif mode1:
-            but.clicked.connect(self.browse_directory)
-        else:
-            QMessageBox.warning(self, "Warning", "Choose what exactly you want to work with: file or directory?")
+        # if mode:
+        #     but.clicked.connect(self.browse_file)
+        # elif mode1:
+        #     but.clicked.connect(self.browse_directory)
+        # else:
+        #     QMessageBox.warning(self, "Warning", "Choose what exactly you want to work with: file or directory?")
 
     def browse_directory(self):
-        global filename
-        filename = QFileDialog.getExistingDirectory(self, 'Open File', '/home')
+        global direcrtoryname
+        direcrtoryname = QFileDialog.getExistingDirectory(self, 'Open File', '/home')
         self.fname.setText(filename)
 
     def browse_file(self):
@@ -134,7 +135,7 @@ class ModeWindow(QMainWindow):
         self.move(300, 300)
         self.resize(650, 450)
         self.setFixedSize(650, 450)
-        self.Decryptor = deCryptorLib.deCryptor()
+        self.DeCryptor = deCryptorLib.deCryptor()
         self.key_path = os.getcwd()
         self.path2key = None
         self.but = None
@@ -143,10 +144,10 @@ class ModeWindow(QMainWindow):
 
     def encoding(self):
         """Шифровать"""
-        pprint(self.DeCryptor.encode_file(filename, key_path))
+        print(self.DeCryptor.encode_file(filename, self.key_path))
 
     def decoding(self):
-        pprint(self.DeCryptor.decode_file(filename, path2key))
+        print(self.DeCryptor.decode_file(filename, self.path2key))
 
     def main_mode(self):
         text = QLabel('Choose a operation', self)
@@ -186,7 +187,7 @@ class ModeWindow(QMainWindow):
         but2.clicked.connect(self.browse_key)
 
     def browse_key(self):
-        key = QFileDialog.getOpenFileName(None, 'Open File', '/home')
+        key = QFileDialog.getOpenFileName(self, 'Open File', '/home')
         self.path2key.setText(key[0])
 
         self.but.hide()
@@ -238,8 +239,8 @@ class ProgressWindow(QMainWindow):
 
 if __name__ == "__main__":
     app = QApplication(sys.argv)
-    win = Window()
+    # win = Window()
     # win = MainWindow()
-    # win = ModeWindow()
+    win = ModeWindow()
     win.show()
     sys.exit(app.exec())
